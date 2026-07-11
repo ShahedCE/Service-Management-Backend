@@ -4,6 +4,7 @@ import { ServiceRequest } from '../../entities/service-request.entity';
 import { StatusHistory } from '../../entities/status-history.entity';
 import { RequestsController } from './requests.controller';
 import { RequestsService } from './requests.service';
+import { RequestsGateway } from './requests.gateway';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
@@ -12,7 +13,7 @@ import { AuthModule } from '../auth/auth.module';
     AuthModule,
   ],
   controllers: [RequestsController],
-  providers: [RequestsService],
-  exports: [RequestsService],
+  providers: [RequestsService, RequestsGateway],
+  exports: [RequestsService, RequestsGateway],
 })
 export class RequestsModule {}

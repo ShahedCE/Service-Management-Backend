@@ -15,6 +15,7 @@ import {
   RejectRequestDto,
   QueryRequestsDto,
 } from './dto';
+import { RequestsGateway } from './requests.gateway';
 
 interface AuthUser {
   id: string;
@@ -29,6 +30,7 @@ export class RequestsService {
     private readonly requestRepo: Repository<ServiceRequest>,
     @InjectRepository(StatusHistory)
     private readonly historyRepo: Repository<StatusHistory>,
+    private readonly gateway: RequestsGateway,
   ) { }
 
   // ── Create ─────────────────────────────────────────────
@@ -50,6 +52,9 @@ export class RequestsService {
       changedByType: ChangedByType.USER,
       comment: null,
     });
+
+    // Emit AFTER DB commit
+    this.gateway.emitRequestCreated(saved);
 
     return saved;
   }
@@ -216,6 +221,9 @@ export class RequestsService {
       comment: 'Request approved',
     });
 
+    // Emit AFTER DB commit
+    this.gateway.emitRequestQueued(saved);
+
     return saved;
   }
 
@@ -256,6 +264,13 @@ export class RequestsService {
       comment: dto.reviewComment,
     });
 
+    // Emit AFTER DB commit
+    if (saved.status === RequestStatus.FAILED) {
+      this.gateway.emitRequestFailed(saved);
+    } else {
+      this.gateway.emitRequestRequeued(saved);
+    }
+
     return saved;
   }
 
@@ -286,6 +301,9 @@ export class RequestsService {
       changedByType: ChangedByType.USER,
       comment: 'Request cancelled',
     });
+
+    // Emit AFTER DB commit
+    this.gateway.emitRequestCancelled(saved);
 
     return saved;
   }
