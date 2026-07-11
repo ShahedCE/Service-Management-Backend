@@ -226,23 +226,20 @@ export class RequestsService {
         throw new NotFoundException(`Service request ${id} not found`);
       }
 
-      if (
-        request.status !== RequestStatus.PENDING &&
-        request.status !== RequestStatus.REQUEUED
-      ) {
+      if (request.status !== RequestStatus.READY_FOR_REVIEW) {
         throw new BadRequestException(
           `Cannot approve a request in ${request.status} status`,
         );
       }
 
       const oldStatus = request.status;
-      request.status = RequestStatus.QUEUED;
+      request.status = RequestStatus.COMPLETED;
       await queryRunner.manager.save(ServiceRequest, request);
 
       await this.insertHistoryTx(queryRunner, {
         requestId: request.id,
         oldStatus,
-        newStatus: RequestStatus.QUEUED,
+        newStatus: RequestStatus.COMPLETED,
         changedById: user.id,
         changedByType: ChangedByType.USER,
         comment: 'Request approved',
@@ -251,17 +248,7 @@ export class RequestsService {
       await queryRunner.commitTransaction();
 
       // Emit AFTER commit
-      this.gateway.emitRequestQueued(request);
-
-      // Enqueue for background processing
-      await this.processingQueue.add(
-        'process-request',
-        { requestId: request.id },
-        {
-          attempts: 3,
-          backoff: { type: 'exponential', delay: 5000 },
-        },
-      );
+      this.gateway.emitRequestCompleted(request);
 
       return request;
     } catch (err) {
