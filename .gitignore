@@ -35,6 +35,7 @@ lerna-debug.log*
 
 # Environment Variables
 .env
+.env.example
 .env.test
 .env.production
 .env.local
