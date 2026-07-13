@@ -48,6 +48,15 @@ export class RequestsController {
     return this.requestsService.findAll(query, user);
   }
 
+  // GET /requests/stats  [OPERATOR, SUPERVISOR]
+  @Get('stats')
+  @Roles(UserRole.OPERATOR, UserRole.SUPERVISOR)
+  async getStats(
+    @CurrentUser() user,
+  ) {
+    return this.requestsService.getStats(user);
+  }
+
   // GET /requests/:id  [OPERATOR, SUPERVISOR]
   @Get(':id')
   @Roles(UserRole.OPERATOR, UserRole.SUPERVISOR)

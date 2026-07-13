@@ -154,6 +154,47 @@ export class RequestsService {
     };
   }
 
+  // ── Stats ──────────────────────────────────────────────
+
+  async getStats(user: AuthUser) {
+    const qb = this.requestRepo.createQueryBuilder('sr')
+      .select('sr.status', 'status')
+      .addSelect('COUNT(sr.id)', 'count');
+
+    if (user.role === UserRole.OPERATOR) {
+      qb.andWhere(
+        '(sr.createdById = :userId OR sr.assignedToId = :userId)',
+        { userId: user.id },
+      );
+    }
+
+    const result = await qb.groupBy('sr.status').getRawMany();
+
+    const stats = {
+      total: 0,
+      active: 0,
+      completed: 0,
+      failed: 0,
+      cancelled: 0,
+    };
+
+    result.forEach(row => {
+      const count = parseInt(row.count, 10);
+      stats.total += count;
+      if (row.status === RequestStatus.COMPLETED) {
+        stats.completed += count;
+      } else if (row.status === RequestStatus.FAILED) {
+        stats.failed += count;
+      } else if (row.status === RequestStatus.CANCELLED) {
+        stats.cancelled += count;
+      } else {
+        stats.active += count;
+      }
+    });
+
+    return { success: true, data: stats };
+  }
+
   // ── Find one ───────────────────────────────────────────
 
   async findOne(id: string, user: AuthUser): Promise<ServiceRequest> {
