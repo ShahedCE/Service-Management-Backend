@@ -30,7 +30,7 @@ export class ChatService {
     // Fetch relations for broadcast
     const result = await this.chatMessageRepository.findOne({
       where: { id: savedMessage.id },
-      relations: { sender: true },
+      relations: { sender: true, operator: true },
     });
     
     if (!result) {

@@ -93,4 +93,49 @@ export class ChatGateway {
       return { success: false, error: error.message };
     }
   }
+
+  @SubscribeMessage('typing')
+  handleTyping(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() payload: { operatorId?: string; isTyping: boolean },
+  ) {
+    try {
+      // Authenticate if not already authenticated
+      if (!client.data.userId) {
+        const token =
+          client.handshake.auth?.token || client.handshake.query?.token;
+        if (!token) throw new Error('No token provided');
+        const decoded = this.jwtService.verify(token as string);
+        client.data.userId = decoded.sub;
+        client.data.email = decoded.email;
+        client.data.role = decoded.role;
+      }
+
+      const senderId = client.data.userId;
+      const role = client.data.role;
+
+      const operatorId =
+        role === UserRole.OPERATOR ? senderId : payload.operatorId;
+
+      if (!operatorId) return { success: false };
+
+      const eventPayload = {
+        operatorId,
+        isTyping: payload.isTyping,
+        senderId,
+      };
+
+      if (role === UserRole.OPERATOR) {
+        // Broadcast to supervisor
+        this.server.to('supervisor-room').emit('userTyping', eventPayload);
+      } else {
+        // Broadcast to operator
+        this.server.to(`user-${operatorId}`).emit('userTyping', eventPayload);
+      }
+      return { success: true };
+    } catch (error) {
+      this.logger.error(`Error sending typing status: ${error.message}`);
+      return { success: false };
+    }
+  }
 }
