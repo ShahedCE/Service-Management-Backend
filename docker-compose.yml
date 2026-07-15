@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: service-backend
     ports:
-      - '3000:3000'
+      - '4000:3000'
     env_file:
       - .env.example
     depends_on:
@@ -44,6 +44,21 @@ services:
       - '6379:6379'
     volumes:
       - redis_data:/data
+    networks:
+      - service-network
+
+  frontend:
+    build:
+      context: ../service-frontend
+      dockerfile: Dockerfile
+    container_name: service-frontend
+    ports:
+      - '3000:3001'
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:4000
+      - NEXT_PUBLIC_SOCKET_URL=http://localhost:4000
+    depends_on:
+      - backend
     networks:
       - service-network
 
