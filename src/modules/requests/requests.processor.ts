@@ -63,8 +63,8 @@ export class RequestsProcessor extends WorkerHost {
     this.gateway.emitRequestProcessing(processing);
 
     // ── Step 3: Simulate work — progress 0→100 ──────────
-    for (let progress = 20; progress <= 100; progress += 20) {
-      await this.sleep(2000);
+    for (let progress = 0; progress <= 100; progress += 5) {
+      await this.sleep(6000);
 
       // Re-check status before each tick (could have been cancelled)
       const current = await this.updateProgress(requestId, progress);

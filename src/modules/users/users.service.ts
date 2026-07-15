@@ -103,4 +103,12 @@ export class UsersService {
     const { passwordHash: _, ...result } = saved;
     return result as User;
   }
+
+  async delete(id: string): Promise<void> {
+    const user = await this.userRepo.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    await this.userRepo.delete(id);
+  }
 }

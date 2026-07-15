@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Patch,
+  Delete,
   Param,
   Body,
   UseGuards,
@@ -54,5 +55,13 @@ export class UsersController {
   ) {
     const data = await this.usersService.update(id, dto);
     return { success: true, data };
+  }
+
+  // DELETE /users/:id  [SUPERVISOR only]
+  @Delete(':id')
+  @Roles(UserRole.SUPERVISOR)
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    await this.usersService.delete(id);
+    return { success: true, message: 'User deleted successfully' };
   }
 }
