@@ -77,7 +77,7 @@ PORT=3000
 # Seed script — creates the first Supervisor account
 SUPERVISOR_EMAIL=supervisor@example.com
 SUPERVISOR_PASSWORD=changeme123
-SUPERVISOR_NAME=Default Supervisor
+SUPERVISOR_NAME=John Doe
 \`\`\`
 
 > Note: When running via Docker Compose, DATABASE_URL and REDIS_HOST
