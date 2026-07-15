@@ -138,6 +138,12 @@ npm run start:prod
 | PATCH /requests/:id/reject | Supervisor | body: { reviewComment } → REQUEUED or FAILED |
 | PATCH /requests/:id/cancel | Supervisor | → CANCELLED (from any pre-terminal state) |
 
+### Chat (Real-time Messaging)
+| Endpoint | Role | Notes |
+|---|---|---|
+| GET /chat/active | Supervisor | List all active chats (latest message per operator) |
+| GET /chat/:operatorId | Operator, Supervisor | Fetch message history. Operator restricted to own. |
+
 ### Status History
 | Endpoint | Role |
 |---|---|
@@ -171,8 +177,7 @@ flowchart TD
     D -->|Reject| F[REQUEUED]
     F --> B
     C -.->|requeueCount = 3| G[FAILED - terminal]
-    C -.->|Supervisor Cancel| H
-    D -.->|Supervisor Cancel| H
+    D -.->|Supervisor Cancel| H[CANCELLED - terminal]
 ```
 \`\`\`
 
@@ -188,6 +193,10 @@ flowchart TD
 | requestRequeued | Server→Client | ServiceRequest |
 | requestFailed | Server→Client | ServiceRequest |
 | requestCancelled | Server→Client | ServiceRequest |
+| sendMessage | Client→Server | { operatorId, content } |
+| typing | Client→Server | { operatorId, isTyping } |
+| newMessage | Server→Client | ChatMessage |
+| userTyping | Server→Client | { operatorId, isTyping, senderId } |
 
 **Rooms:**
 - `supervisor-room` — receives all events
