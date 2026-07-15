@@ -9,6 +9,7 @@ import {
 import { UserRole } from './enums';
 import { ServiceRequest } from './service-request.entity';
 import { StatusHistory } from './status-history.entity';
+import { ChatMessage } from './chat-message.entity';
 
 @Entity('users')
 export class User {
@@ -46,4 +47,10 @@ export class User {
 
   @OneToMany(() => StatusHistory, (sh) => sh.changedBy)
   statusChanges: StatusHistory[];
+
+  @OneToMany(() => ChatMessage, (msg) => msg.operator)
+  operatorChatMessages: ChatMessage[];
+
+  @OneToMany(() => ChatMessage, (msg) => msg.sender)
+  sentMessages: ChatMessage[];
 }
