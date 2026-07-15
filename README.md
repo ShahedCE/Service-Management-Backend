@@ -68,11 +68,11 @@ npm run dev
 
 ### Environment Variables (.env)
 \`\`\`
-DATABASE_URL=postgres://user:pass@localhost:5432/service_requests
+DATABASE_URL=postgresql://postgres:Shahed@localhost:5433/service_management_db
 REDIS_HOST=localhost
 REDIS_PORT=6379
 JWT_SECRET=your_secret
-PORT=3000
+PORT=4000
 
 # Seed script — creates the first Supervisor account
 SUPERVISOR_EMAIL=supervisor@example.com
@@ -85,7 +85,7 @@ SUPERVISOR_NAME=John Doe
 
 ## Database Setup
 \`\`\`bash
-createdb service_requests
+createdb service_management_db
 npm run migration:run
 npm run seed   # creates the first Supervisor account (idempotent)
 \`\`\`
