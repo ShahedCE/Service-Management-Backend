@@ -160,27 +160,22 @@ the user's role against the route's @Roles() metadata before allowing access.
 | Approve / Reject / Cancel | ❌ | ✅ |
 | Manage users | ❌ | ✅ |
 | View status history | ✅ | ✅ |
-
 ## Request Lifecycle
-\`\`\`
-PENDING → QUEUED → PROCESSING → READY_FOR_REVIEW
-                                      │
-                     ┌────────────────┴────────────────┐
-                     ▼                                  ▼
-                 Approve                             Reject
-                     │                                  │
-                     ▼                                  ▼
-               COMPLETED                            REQUEUED
-              (terminal)                                │
-                                                          ▼
-                                          QUEUED → PROCESSING → READY_FOR_REVIEW
-                                          (loop until requeueCount = 3)
-                                                          │
-                                                          ▼
-                                                       FAILED
-                                                     (terminal)
 
-CANCELLED — reachable from any pre-terminal state, Supervisor only (terminal)
+```mermaid
+flowchart TD
+    A[PENDING] --> B[QUEUED]
+    B --> C[PROCESSING]
+    C --> D[READY_FOR_REVIEW]
+    D -->|Approve| E[COMPLETED - terminal]
+    D -->|Reject| F[REQUEUED]
+    F --> B
+    C -.->|requeueCount = 3| G[FAILED - terminal]
+    A -.->|Supervisor Cancel| H[CANCELLED - terminal]
+    B -.->|Supervisor Cancel| H
+    C -.->|Supervisor Cancel| H
+    D -.->|Supervisor Cancel| H
+```
 \`\`\`
 
 ## WebSocket Events
