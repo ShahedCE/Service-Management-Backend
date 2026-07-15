@@ -160,8 +160,8 @@ the user's role against the route's @Roles() metadata before allowing access.
 | Approve / Reject / Cancel | ❌ | ✅ |
 | Manage users | ❌ | ✅ |
 | View status history | ✅ | ✅ |
-## Request Lifecycle
 
+## Request Lifecycle
 ```mermaid
 flowchart TD
     A[PENDING] --> B[QUEUED]
@@ -171,8 +171,6 @@ flowchart TD
     D -->|Reject| F[REQUEUED]
     F --> B
     C -.->|requeueCount = 3| G[FAILED - terminal]
-    A -.->|Supervisor Cancel| H[CANCELLED - terminal]
-    B -.->|Supervisor Cancel| H
     C -.->|Supervisor Cancel| H
     D -.->|Supervisor Cancel| H
 ```
