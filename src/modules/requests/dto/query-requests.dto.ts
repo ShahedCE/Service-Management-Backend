@@ -8,8 +8,8 @@ export class QueryRequestsDto {
   search?: string;
 
   @IsOptional()
-  @IsEnum(RequestStatus)
-  status?: RequestStatus;
+  @IsString()
+  status?: string;
 
   @IsOptional()
   @IsEnum(RequestPriority)

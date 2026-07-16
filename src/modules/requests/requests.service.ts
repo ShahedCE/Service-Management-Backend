@@ -108,7 +108,11 @@ export class RequestsService {
       qb.andWhere('sr.title ILIKE :search', { search: `%${search}%` });
     }
     if (status) {
-      qb.andWhere('sr.status = :status', { status });
+      if (status === 'PROCESSING') {
+        qb.andWhere('sr.status IN (:...statuses)', { statuses: ['PENDING', 'QUEUED', 'PROCESSING', 'REQUEUED'] });
+      } else {
+        qb.andWhere('sr.status = :status', { status });
+      }
     }
     if (priority) {
       qb.andWhere('sr.priority = :priority', { priority });

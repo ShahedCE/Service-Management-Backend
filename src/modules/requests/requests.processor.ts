@@ -28,73 +28,66 @@ export class RequestsProcessor extends WorkerHost {
     const { requestId } = job.data;
     this.logger.log(`Processing job ${job.id} for request ${requestId}`);
 
-    // ── Step 1: PENDING → QUEUED ─────────────────────────
-    const request = await this.transitionStatus(
-      requestId,
-      [RequestStatus.PENDING, RequestStatus.REQUEUED],
-      RequestStatus.QUEUED,
-      'Job picked up by worker',
-    );
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    let request = await queryRunner.manager.findOne(ServiceRequest, { where: { id: requestId } });
+    await queryRunner.release();
 
-    if (!request) {
-      this.logger.warn(
-        `Request ${requestId} — skipped (terminal or unexpected state)`,
-      );
+    if (!request || TERMINAL_STATUSES.includes(request.status) || request.status === RequestStatus.READY_FOR_REVIEW) {
+      this.logger.warn(`Request ${requestId} — skipped (terminal or unexpected state)`);
       return;
     }
 
-    this.gateway.emitRequestQueued(request);
+    // ── Step 1: PENDING → QUEUED ─────────────────────────
+    if (request.status === RequestStatus.PENDING || request.status === RequestStatus.REQUEUED) {
+      request = await this.transitionStatus(
+        requestId,
+        [RequestStatus.PENDING, RequestStatus.REQUEUED],
+        RequestStatus.QUEUED,
+        'Job picked up by worker',
+      );
+      if (!request) return;
+      this.gateway.emitRequestQueued(request);
+    }
 
     // ── Step 2: QUEUED → PROCESSING ──────────────────────
-    const processing = await this.transitionStatus(
-      requestId,
-      [RequestStatus.QUEUED],
-      RequestStatus.PROCESSING,
-      'Worker started processing',
-    );
-
-    if (!processing) {
-      this.logger.warn(
-        `Request ${requestId} — skipped PROCESSING transition`,
+    if (request.status === RequestStatus.QUEUED) {
+      request = await this.transitionStatus(
+        requestId,
+        [RequestStatus.QUEUED],
+        RequestStatus.PROCESSING,
+        'Worker started processing',
       );
-      return;
+      if (!request) return;
+      this.gateway.emitRequestProcessing(request);
     }
-
-    this.gateway.emitRequestProcessing(processing);
 
     // ── Step 3: Simulate work — progress 0→100 ──────────
-    for (let progress = 0; progress <= 100; progress += 5) {
-      await this.sleep(6000);
+    if (request.status === RequestStatus.PROCESSING) {
+      const startProgress = request.progress || 0;
+      for (let progress = startProgress; progress <= 100; progress += 5) {
+        // Sleep less for simulation if resuming
+        await this.sleep(3000); 
 
-      // Re-check status before each tick (could have been cancelled)
-      const current = await this.updateProgress(requestId, progress);
-      if (!current) {
-        this.logger.warn(
-          `Request ${requestId} — aborted at ${progress}% (cancelled or failed)`,
-        );
-        return;
+        const current = await this.updateProgress(requestId, progress);
+        if (!current) {
+          this.logger.warn(`Request ${requestId} — aborted at ${progress}% (cancelled or failed)`);
+          return;
+        }
+        this.gateway.emitRequestProgressUpdated(current);
       }
 
-      this.gateway.emitRequestProgressUpdated(current);
-    }
-
-    // ── Step 4: PROCESSING → READY_FOR_REVIEW ────────────
-    const ready = await this.transitionStatus(
-      requestId,
-      [RequestStatus.PROCESSING],
-      RequestStatus.READY_FOR_REVIEW,
-      'Processing complete — awaiting supervisor review',
-    );
-
-    if (!ready) {
-      this.logger.warn(
-        `Request ${requestId} — skipped READY_FOR_REVIEW transition`,
+      // ── Step 4: PROCESSING → READY_FOR_REVIEW ────────────
+      const ready = await this.transitionStatus(
+        requestId,
+        [RequestStatus.PROCESSING],
+        RequestStatus.READY_FOR_REVIEW,
+        'Processing complete — awaiting supervisor review',
       );
-      return;
+      if (!ready) return;
+      this.gateway.emitRequestReadyForReview(ready);
+      this.logger.log(`Request ${requestId} — ready for review`);
     }
-
-    this.gateway.emitRequestReadyForReview(ready);
-    this.logger.log(`Request ${requestId} — ready for review`);
   }
 
   // ── Transaction helpers ─────────────────────────────────
